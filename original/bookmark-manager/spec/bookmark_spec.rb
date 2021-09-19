@@ -1,6 +1,9 @@
 require 'bookmark'
+require 'comment'
 require 'database_helpers'
+
 describe Bookmark do
+  let(:comment_class) { double(:comment_class) }
   
   describe '.all' do
 
@@ -22,19 +25,24 @@ describe Bookmark do
   end
 
   describe '.create' do
-    scenario 'creates a new bookmark' do
+    it 'creates a new bookmark' do
       bookmark = Bookmark.create(url: 'http://example.org', title: 'Test Bookmark')
-      persisted_data = persisted_data(id: bookmark.id)
+      persisted_data = persisted_data(id: bookmark.id, table: 'bookmarks')
 
       expect(bookmark).to be_a Bookmark
       expect(bookmark.id).to eq persisted_data.first['id']
       expect(bookmark.url).to eq 'http://example.org'
       expect(bookmark.title).to eq 'Test Bookmark'
     end
+
+    it 'does not create a new bookmark if the URL is not valid' do
+      bookmark = Bookmark.create(url: 'not a real bookmark', title: 'not a real bookmark')
+      expect(bookmark).not_to be_a Bookmark
+    end
   end
 
   describe '.delete' do
-    scenario 'deletes the given bookmark' do
+    it 'deletes the given bookmark' do
       bookmark = Bookmark.create(url: 'http://www.facebook.com', title: 'Facebook')
       
       Bookmark.delete(id: bookmark.id)
@@ -43,7 +51,7 @@ describe Bookmark do
   end
 
   describe '.update' do
-    scenario 'updates an existing bookmark' do
+    it 'updates an existing bookmark' do
       bookmark = Bookmark.create(url: 'http://www.facebook.com', title: 'Facebook')
       updated_bookmark = Bookmark.update(id: bookmark.id, url: 'http://www.amazon.com', title: 'Amazon')
     
@@ -55,7 +63,7 @@ describe Bookmark do
   end
 
   describe '.find' do
-    scenario 'returns the requested bokkmark object' do
+    it 'returns the requested bokkmark object' do
       bookmark = Bookmark.create(url: 'http://www.facebook.com', title: 'Facebook')
 
       result = Bookmark.find(id: bookmark.id)
@@ -64,6 +72,15 @@ describe Bookmark do
       expect(result.id).to eq bookmark.id
       expect(result.url).to eq 'http://www.facebook.com'
       expect(result.title).to eq 'Facebook'
+    end
+  end
+
+  describe '#comments' do
+    it 'calls .where on the Comment class' do
+      bookmark = Bookmark.create(title: 'Makers Academy', url: 'http://www.makersacademy.com')
+      allow(comment_class).to receive(:where).with(bookmark_id: bookmark.id)
+
+      bookmark.comments(comment_class)
     end
   end
 end
